@@ -1,6 +1,15 @@
 <?php
 header("Content-Type: application/json");
 
+// --- Token Akses ---
+$valid_token = '4SS3T123K3Y';
+$incoming_token = $_GET['token'] ?? '';
+if ($incoming_token !== $valid_token) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Akses ditolak. Token tidak valid.']);
+    exit;
+}
+
 // --- Koneksi Database ---
 $host = 'localhost'; $db = 'db_asset'; $user = 'root'; $pass = '';
 try {
@@ -35,5 +44,13 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $assets[] = $row;
 }
 
-echo json_encode($assets);
-?>
+// --- Enkripsi Output JSON ---
+$plaintext = json_encode($assets);
+$key = '12345678901234567890123456789012'; // 32 karakter (AES-256)
+$iv = openssl_random_pseudo_bytes(16);
+$encrypted = openssl_encrypt($plaintext, 'AES-256-CBC', $key, 0, $iv);
+
+echo json_encode([
+    'data' => $encrypted,
+    'iv' => base64_encode($iv),
+]);
